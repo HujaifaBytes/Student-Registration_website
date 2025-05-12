@@ -15,7 +15,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { useToast } from "@/components/ui/use-toast"
 import { registerStudent } from "@/lib/actions"
 import { ThemeToggle } from "@/components/theme-toggle"
-import { Phone, AlertCircle } from "lucide-react"
+import { Phone, AlertCircle, Loader2 } from "lucide-react"
 import { validateImageDimensions } from "@/lib/image-utils"
 import { MobileNav } from "@/components/mobile-nav"
 import { IMAGES, SOCIAL_LINKS } from "@/lib/image-paths"
@@ -31,8 +31,10 @@ export default function RegisterPage() {
   const [signatureError, setSignatureError] = useState<string | null>(null)
   const [photoWarning, setPhotoWarning] = useState<string | null>(null)
   const [signatureWarning, setSignatureWarning] = useState<string | null>(null)
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({})
   const photoInputRef = useRef<HTMLInputElement>(null)
   const signatureInputRef = useRef<HTMLInputElement>(null)
+  const formRef = useRef<HTMLFormElement>(null)
 
   const [formData, setFormData] = useState({
     class: "",
@@ -57,6 +59,32 @@ export default function RegisterPage() {
     signature: null as File | null,
   })
 
+  // Validate form before submission
+  const validateForm = () => {
+    const errors: Record<string, string> = {}
+
+    if (!formData.class) errors.class = "Please select a class"
+    if (!formData.olympiadType) errors.olympiadType = "Please select an olympiad type"
+    if (!formData.fullName) errors.fullName = "Full name is required"
+    if (!formData.fatherName) errors.fatherName = "Father's name is required"
+    if (!formData.motherName) errors.motherName = "Mother's name is required"
+    if (!formData.fatherMobile) errors.fatherMobile = "Father's mobile number is required"
+    if (!formData.address) errors.address = "Address is required"
+    if (!formData.gender) errors.gender = "Please select a gender"
+
+    // Validate date of birth
+    if (!formData.dateOfBirth.day || !formData.dateOfBirth.month || !formData.dateOfBirth.year) {
+      errors.dateOfBirth = "Complete date of birth is required"
+    }
+
+    if (!formData.educationalInstitute) errors.educationalInstitute = "Educational institute is required"
+    if (!formData.dreamUniversity) errors.dreamUniversity = "Please select a dream university"
+    if (!formData.photo) errors.photo = "Photo is required"
+
+    setFormErrors(errors)
+    return Object.keys(errors).length === 0
+  }
+
   // Update the handlePhotoChange function
   const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -65,6 +93,7 @@ export default function RegisterPage() {
       // Reset errors
       setPhotoError(null)
       setPhotoWarning(null)
+      setFormErrors((prev) => ({ ...prev, photo: undefined }))
 
       // Validate image dimensions
       const validation = await validateImageDimensions(file, 600, 600, 5)
@@ -118,9 +147,13 @@ export default function RegisterPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    // Validate required photo
-    if (!formData.photo) {
-      setPhotoError("Photo is required")
+    // Validate the form
+    if (!validateForm()) {
+      toast({
+        title: "Form Validation Error",
+        description: "Please fill in all required fields correctly.",
+        variant: "destructive",
+      })
       return
     }
 
@@ -132,13 +165,24 @@ export default function RegisterPage() {
 
       // Create form data for submission
       const formDataToSubmit = new FormData()
-      Object.entries(formData).forEach(([key, value]) => {
-        if (key !== "dateOfBirth" && key !== "photo" && key !== "signature") {
-          formDataToSubmit.append(key, value as string)
-        }
-      })
 
+      // Add all text fields
+      formDataToSubmit.append("class", formData.class)
+      formDataToSubmit.append("olympiadType", formData.olympiadType)
+      formDataToSubmit.append("fullName", formData.fullName)
+      formDataToSubmit.append("fatherName", formData.fatherName)
+      formDataToSubmit.append("motherName", formData.motherName)
+      formDataToSubmit.append("fatherMobile", formData.fatherMobile)
+      formDataToSubmit.append("motherMobile", formData.motherMobile || "")
+      formDataToSubmit.append("address", formData.address)
+      formDataToSubmit.append("gender", formData.gender)
       formDataToSubmit.append("dateOfBirth", dob)
+      formDataToSubmit.append("educationalInstitute", formData.educationalInstitute)
+      formDataToSubmit.append("dreamUniversity", formData.dreamUniversity)
+      formDataToSubmit.append("previousScholarship", formData.previousScholarship)
+      formDataToSubmit.append("scholarshipDetails", formData.scholarshipDetails || "")
+
+      // Add files
       if (formData.photo) {
         formDataToSubmit.append("photo", formData.photo)
       }
@@ -146,8 +190,10 @@ export default function RegisterPage() {
         formDataToSubmit.append("signature", formData.signature)
       }
 
+      console.log("Submitting form data...")
       // Submit the form data
       const result = await registerStudent(formDataToSubmit)
+      console.log("Form submission result:", result)
 
       if (result.success) {
         toast({
@@ -161,6 +207,7 @@ export default function RegisterPage() {
         throw new Error(result.error || "Registration failed")
       }
     } catch (error) {
+      console.error("Registration error:", error)
       toast({
         title: "Registration Failed",
         description: error instanceof Error ? error.message : "An unexpected error occurred",
@@ -221,7 +268,7 @@ export default function RegisterPage() {
               </h3>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-8">
+            <form ref={formRef} onSubmit={handleSubmit} className="space-y-8">
               {/* Form content remains the same */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-4">
@@ -233,7 +280,10 @@ export default function RegisterPage() {
                         <Checkbox
                           id={`class-${classNum}`}
                           checked={formData.class === classNum.toString()}
-                          onCheckedChange={() => setFormData({ ...formData, class: classNum.toString() })}
+                          onCheckedChange={() => {
+                            setFormData({ ...formData, class: classNum.toString() })
+                            setFormErrors((prev) => ({ ...prev, class: undefined }))
+                          }}
                         />
                         <Label htmlFor={`class-${classNum}`} className="text-gray-700 dark:text-gray-300">
                           {classNum}
@@ -241,6 +291,7 @@ export default function RegisterPage() {
                       </div>
                     ))}
                   </div>
+                  {formErrors.class && <p className="text-red-500 text-xs mt-1">{formErrors.class}</p>}
                 </div>
 
                 <div className="space-y-4">
@@ -251,7 +302,10 @@ export default function RegisterPage() {
                       <Checkbox
                         id="olympiad-science"
                         checked={formData.olympiadType === "Science"}
-                        onCheckedChange={() => setFormData({ ...formData, olympiadType: "Science" })}
+                        onCheckedChange={() => {
+                          setFormData({ ...formData, olympiadType: "Science" })
+                          setFormErrors((prev) => ({ ...prev, olympiadType: undefined }))
+                        }}
                       />
                       <Label htmlFor="olympiad-science" className="text-gray-700 dark:text-gray-300">
                         Science (5-10)
@@ -261,7 +315,10 @@ export default function RegisterPage() {
                       <Checkbox
                         id="olympiad-math"
                         checked={formData.olympiadType === "Math"}
-                        onCheckedChange={() => setFormData({ ...formData, olympiadType: "Math" })}
+                        onCheckedChange={() => {
+                          setFormData({ ...formData, olympiadType: "Math" })
+                          setFormErrors((prev) => ({ ...prev, olympiadType: undefined }))
+                        }}
                       />
                       <Label htmlFor="olympiad-math" className="text-gray-700 dark:text-gray-300">
                         Math (5-10)
@@ -271,13 +328,17 @@ export default function RegisterPage() {
                       <Checkbox
                         id="olympiad-physics"
                         checked={formData.olympiadType === "Physics"}
-                        onCheckedChange={() => setFormData({ ...formData, olympiadType: "Physics" })}
+                        onCheckedChange={() => {
+                          setFormData({ ...formData, olympiadType: "Physics" })
+                          setFormErrors((prev) => ({ ...prev, olympiadType: undefined }))
+                        }}
                       />
                       <Label htmlFor="olympiad-physics" className="text-gray-700 dark:text-gray-300">
                         Physics (8-10)
                       </Label>
                     </div>
                   </div>
+                  {formErrors.olympiadType && <p className="text-red-500 text-xs mt-1">{formErrors.olympiadType}</p>}
                 </div>
               </div>
 
@@ -323,6 +384,12 @@ export default function RegisterPage() {
                     {photoWarning}
                   </div>
                 )}
+                {formErrors.photo && (
+                  <div className="flex items-center mt-1 text-red-500 text-xs">
+                    <AlertCircle className="h-3 w-3 mr-1" />
+                    {formErrors.photo}
+                  </div>
+                )}
               </div>
 
               {/* Personal Information */}
@@ -340,10 +407,16 @@ export default function RegisterPage() {
                     <Input
                       id="fullName"
                       value={formData.fullName}
-                      onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                      className="border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 dark:bg-gray-700"
+                      onChange={(e) => {
+                        setFormData({ ...formData, fullName: e.target.value })
+                        setFormErrors((prev) => ({ ...prev, fullName: undefined }))
+                      }}
+                      className={`border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 dark:bg-gray-700 ${
+                        formErrors.fullName ? "border-red-500" : ""
+                      }`}
                       required
                     />
+                    {formErrors.fullName && <p className="text-red-500 text-xs mt-1">{formErrors.fullName}</p>}
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -354,10 +427,16 @@ export default function RegisterPage() {
                       <Input
                         id="fatherName"
                         value={formData.fatherName}
-                        onChange={(e) => setFormData({ ...formData, fatherName: e.target.value })}
-                        className="border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 dark:bg-gray-700"
+                        onChange={(e) => {
+                          setFormData({ ...formData, fatherName: e.target.value })
+                          setFormErrors((prev) => ({ ...prev, fatherName: undefined }))
+                        }}
+                        className={`border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 dark:bg-gray-700 ${
+                          formErrors.fatherName ? "border-red-500" : ""
+                        }`}
                         required
                       />
+                      {formErrors.fatherName && <p className="text-red-500 text-xs mt-1">{formErrors.fatherName}</p>}
                     </div>
                     <div>
                       <Label htmlFor="fatherMobile" className="text-gray-700 dark:text-gray-300">
@@ -366,10 +445,18 @@ export default function RegisterPage() {
                       <Input
                         id="fatherMobile"
                         value={formData.fatherMobile}
-                        onChange={(e) => setFormData({ ...formData, fatherMobile: e.target.value })}
-                        className="border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 dark:bg-gray-700"
+                        onChange={(e) => {
+                          setFormData({ ...formData, fatherMobile: e.target.value })
+                          setFormErrors((prev) => ({ ...prev, fatherMobile: undefined }))
+                        }}
+                        className={`border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 dark:bg-gray-700 ${
+                          formErrors.fatherMobile ? "border-red-500" : ""
+                        }`}
                         required
                       />
+                      {formErrors.fatherMobile && (
+                        <p className="text-red-500 text-xs mt-1">{formErrors.fatherMobile}</p>
+                      )}
                     </div>
                   </div>
 
@@ -381,10 +468,16 @@ export default function RegisterPage() {
                       <Input
                         id="motherName"
                         value={formData.motherName}
-                        onChange={(e) => setFormData({ ...formData, motherName: e.target.value })}
-                        className="border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 dark:bg-gray-700"
+                        onChange={(e) => {
+                          setFormData({ ...formData, motherName: e.target.value })
+                          setFormErrors((prev) => ({ ...prev, motherName: undefined }))
+                        }}
+                        className={`border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 dark:bg-gray-700 ${
+                          formErrors.motherName ? "border-red-500" : ""
+                        }`}
                         required
                       />
+                      {formErrors.motherName && <p className="text-red-500 text-xs mt-1">{formErrors.motherName}</p>}
                     </div>
                     <div>
                       <Label htmlFor="motherMobile" className="text-gray-700 dark:text-gray-300">
@@ -406,10 +499,16 @@ export default function RegisterPage() {
                     <Input
                       id="address"
                       value={formData.address}
-                      onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                      className="border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 dark:bg-gray-700"
+                      onChange={(e) => {
+                        setFormData({ ...formData, address: e.target.value })
+                        setFormErrors((prev) => ({ ...prev, address: undefined }))
+                      }}
+                      className={`border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 dark:bg-gray-700 ${
+                        formErrors.address ? "border-red-500" : ""
+                      }`}
                       required
                     />
+                    {formErrors.address && <p className="text-red-500 text-xs mt-1">{formErrors.address}</p>}
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -417,7 +516,10 @@ export default function RegisterPage() {
                       <Label className="text-gray-700 dark:text-gray-300 block mb-2">Gender:</Label>
                       <RadioGroup
                         value={formData.gender}
-                        onValueChange={(value) => setFormData({ ...formData, gender: value })}
+                        onValueChange={(value) => {
+                          setFormData({ ...formData, gender: value })
+                          setFormErrors((prev) => ({ ...prev, gender: undefined }))
+                        }}
                         className="flex space-x-4"
                       >
                         <div className="flex items-center space-x-2">
@@ -433,6 +535,7 @@ export default function RegisterPage() {
                           </Label>
                         </div>
                       </RadioGroup>
+                      {formErrors.gender && <p className="text-red-500 text-xs mt-1">{formErrors.gender}</p>}
                     </div>
 
                     <div>
@@ -440,7 +543,9 @@ export default function RegisterPage() {
                       <div className="flex space-x-2">
                         <Input
                           placeholder="DD"
-                          className="w-16 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 dark:bg-gray-700"
+                          className={`w-16 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 dark:bg-gray-700 ${
+                            formErrors.dateOfBirth ? "border-red-500" : ""
+                          }`}
                           value={formData.dateOfBirth.day}
                           onChange={(e) =>
                             setFormData({
@@ -453,7 +558,9 @@ export default function RegisterPage() {
                         />
                         <Input
                           placeholder="MM"
-                          className="w-16 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 dark:bg-gray-700"
+                          className={`w-16 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 dark:bg-gray-700 ${
+                            formErrors.dateOfBirth ? "border-red-500" : ""
+                          }`}
                           value={formData.dateOfBirth.month}
                           onChange={(e) =>
                             setFormData({
@@ -466,7 +573,9 @@ export default function RegisterPage() {
                         />
                         <Input
                           placeholder="YYYY"
-                          className="w-20 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 dark:bg-gray-700"
+                          className={`w-20 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 dark:bg-gray-700 ${
+                            formErrors.dateOfBirth ? "border-red-500" : ""
+                          }`}
                           value={formData.dateOfBirth.year}
                           onChange={(e) =>
                             setFormData({
@@ -478,6 +587,7 @@ export default function RegisterPage() {
                           required
                         />
                       </div>
+                      {formErrors.dateOfBirth && <p className="text-red-500 text-xs mt-1">{formErrors.dateOfBirth}</p>}
                     </div>
                   </div>
 
@@ -488,17 +598,28 @@ export default function RegisterPage() {
                     <Input
                       id="educationalInstitute"
                       value={formData.educationalInstitute}
-                      onChange={(e) => setFormData({ ...formData, educationalInstitute: e.target.value })}
-                      className="border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 dark:bg-gray-700"
+                      onChange={(e) => {
+                        setFormData({ ...formData, educationalInstitute: e.target.value })
+                        setFormErrors((prev) => ({ ...prev, educationalInstitute: undefined }))
+                      }}
+                      className={`border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 dark:bg-gray-700 ${
+                        formErrors.educationalInstitute ? "border-red-500" : ""
+                      }`}
                       required
                     />
+                    {formErrors.educationalInstitute && (
+                      <p className="text-red-500 text-xs mt-1">{formErrors.educationalInstitute}</p>
+                    )}
                   </div>
 
                   <div>
                     <Label className="text-gray-700 dark:text-gray-300 block mb-2">Dream University:</Label>
                     <RadioGroup
                       value={formData.dreamUniversity}
-                      onValueChange={(value) => setFormData({ ...formData, dreamUniversity: value })}
+                      onValueChange={(value) => {
+                        setFormData({ ...formData, dreamUniversity: value })
+                        setFormErrors((prev) => ({ ...prev, dreamUniversity: undefined }))
+                      }}
                       className="grid grid-cols-1 md:grid-cols-3 gap-4"
                     >
                       <div className="flex items-center space-x-2">
@@ -520,6 +641,9 @@ export default function RegisterPage() {
                         </Label>
                       </div>
                     </RadioGroup>
+                    {formErrors.dreamUniversity && (
+                      <p className="text-red-500 text-xs mt-1">{formErrors.dreamUniversity}</p>
+                    )}
                   </div>
 
                   <div>
@@ -652,7 +776,14 @@ export default function RegisterPage() {
                   className="bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-600 text-white px-8 py-2 text-lg rounded-md"
                   disabled={isSubmitting}
                 >
-                  {isSubmitting ? "Submitting..." : "Register"}
+                  {isSubmitting ? (
+                    <div className="flex items-center">
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Submitting...
+                    </div>
+                  ) : (
+                    "Register"
+                  )}
                 </Button>
               </div>
 

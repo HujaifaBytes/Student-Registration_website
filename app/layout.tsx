@@ -5,16 +5,8 @@ import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { initDatabase } from "@/lib/db"
 
-// Initialize the database with default admin, but don't block rendering
-if (typeof window !== "undefined") {
-  // Only run on client side
-  Promise.resolve().then(() => {
-    initDatabase().catch(console.error)
-  })
-} else {
-  // On server side, just log that we'll initialize later
-  console.log("Database will be initialized on client side")
-}
+// Initialize the database with default admin
+initDatabase().catch(console.error)
 
 const inter = Inter({ subsets: ["latin"] })
 

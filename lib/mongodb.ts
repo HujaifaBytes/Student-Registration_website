@@ -13,6 +13,10 @@ const options = {
     strict: true,
     deprecationErrors: true,
   },
+  // Add these options to ensure connection works properly
+  connectTimeoutMS: 30000,
+  socketTimeoutMS: 45000,
+  maxPoolSize: 20,
 }
 
 let client

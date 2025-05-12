@@ -7,6 +7,8 @@ import { cookies } from "next/headers"
 
 export async function registerStudent(formData: FormData) {
   try {
+    console.log("Starting student registration process")
+
     // Extract form data
     const class_ = formData.get("class") as string
     const olympiadType = formData.get("olympiadType") as string
@@ -25,6 +27,15 @@ export async function registerStudent(formData: FormData) {
     const photo = formData.get("photo") as File | null
     const signature = formData.get("signature") as File | null
 
+    console.log("Form data extracted:", {
+      class: class_,
+      olympiadType,
+      fullName,
+      fatherMobile,
+      gender,
+      dateOfBirth,
+    })
+
     // Validate required fields
     if (
       !class_ ||
@@ -40,20 +51,28 @@ export async function registerStudent(formData: FormData) {
       !dreamUniversity ||
       !previousScholarship
     ) {
+      console.error("Missing required fields")
       return { success: false, error: "Missing required fields" }
     }
 
     // Check for duplicate registration
-    const existingStudents = await db.student.findByNameAndMobile(fullName, fatherMobile)
-    if (existingStudents && existingStudents.length > 0) {
-      return {
-        success: false,
-        error: "A student with this name and mobile number is already registered",
+    try {
+      const existingStudents = await db.student.findByNameAndMobile(fullName, fatherMobile)
+      if (existingStudents && existingStudents.length > 0) {
+        console.error("Duplicate registration found")
+        return {
+          success: false,
+          error: "A student with this name and mobile number is already registered",
+        }
       }
+    } catch (error) {
+      console.error("Error checking for duplicate registration:", error)
+      // Continue with registration even if duplicate check fails
     }
 
     // Generate registration number
     const registrationNumber = `SSS-${new Date().getFullYear()}-${generateId(6)}`
+    console.log("Generated registration number:", registrationNumber)
 
     // Handle photo upload (in a real app, you would upload to a storage service)
     let photoUrl = null
@@ -70,6 +89,7 @@ export async function registerStudent(formData: FormData) {
       signatureUrl = `/placeholder.svg?height=80&width=300`
     }
 
+    console.log("Creating student record in database")
     // Create student record in database
     const studentId = await db.student.create({
       class: class_,
@@ -92,6 +112,8 @@ export async function registerStudent(formData: FormData) {
       registrationDate: new Date().toISOString().split("T")[0],
       paymentStatus: "pending",
     })
+
+    console.log("Student registered successfully with ID:", studentId)
 
     // Force revalidation of relevant paths
     revalidatePath("/")

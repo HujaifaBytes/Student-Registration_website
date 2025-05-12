@@ -5,9 +5,17 @@ export const db = {
   student: {
     async create(data: any) {
       try {
+        console.log("Attempting to create student record:", data)
         const client = await clientPromise
         const db = client.db("olympiad")
         const collection = db.collection("students")
+
+        // Ensure the collection exists
+        const collections = await db.listCollections({ name: "students" }).toArray()
+        if (collections.length === 0) {
+          await db.createCollection("students")
+          console.log("Created students collection")
+        }
 
         const result = await collection.insertOne({
           ...data,
@@ -15,6 +23,7 @@ export const db = {
           createdAt: new Date(),
         })
 
+        console.log("Student record created with ID:", result.insertedId.toString())
         return result.insertedId.toString()
       } catch (error) {
         console.error("Error creating student:", error)
@@ -24,14 +33,27 @@ export const db = {
 
     async findById(id: string) {
       try {
+        console.log("Finding student by ID:", id)
         const client = await clientPromise
         const db = client.db("olympiad")
         const collection = db.collection("students")
 
-        const student = await collection.findOne({ _id: new ObjectId(id) })
+        let objectId
+        try {
+          objectId = new ObjectId(id)
+        } catch (error) {
+          console.error("Invalid ObjectId format:", id)
+          return null
+        }
 
-        if (!student) return null
+        const student = await collection.findOne({ _id: objectId })
 
+        if (!student) {
+          console.log("No student found with ID:", id)
+          return null
+        }
+
+        console.log("Found student:", student._id.toString())
         return {
           ...student,
           id: student._id.toString(),
@@ -44,6 +66,7 @@ export const db = {
 
     async findByNameAndMobile(fullName: string, fatherMobile: string) {
       try {
+        console.log("Finding student by name and mobile:", fullName, fatherMobile)
         const client = await clientPromise
         const db = client.db("olympiad")
         const collection = db.collection("students")
@@ -55,6 +78,7 @@ export const db = {
           })
           .toArray()
 
+        console.log(`Found ${students.length} students with name and mobile`)
         return students.map((student) => ({
           ...student,
           id: student._id.toString(),
@@ -67,12 +91,14 @@ export const db = {
 
     async findAll() {
       try {
+        console.log("Finding all students")
         const client = await clientPromise
         const db = client.db("olympiad")
         const collection = db.collection("students")
 
         const students = await collection.find({}).sort({ registrationDate: -1 }).toArray()
 
+        console.log(`Found ${students.length} students`)
         return students.map((student) => ({
           ...student,
           id: student._id.toString(),
@@ -85,15 +111,25 @@ export const db = {
 
     async updatePaymentStatus(id: string, status: string) {
       try {
+        console.log("Updating payment status for student:", id, status)
         const client = await clientPromise
         const db = client.db("olympiad")
         const collection = db.collection("students")
 
+        let objectId
+        try {
+          objectId = new ObjectId(id)
+        } catch (error) {
+          console.error("Invalid ObjectId format:", id)
+          return false
+        }
+
         const result = await collection.updateOne(
-          { _id: new ObjectId(id) },
+          { _id: objectId },
           { $set: { paymentStatus: status, updatedAt: new Date() } },
         )
 
+        console.log("Update result:", result.modifiedCount > 0 ? "Success" : "Failed")
         return result.modifiedCount > 0
       } catch (error) {
         console.error("Error updating payment status:", error)
@@ -103,6 +139,7 @@ export const db = {
 
     async getStats() {
       try {
+        console.log("Getting student stats")
         const client = await clientPromise
         const db = client.db("olympiad")
         const collection = db.collection("students")
@@ -111,6 +148,7 @@ export const db = {
         const totalPaid = await collection.countDocuments({ paymentStatus: "paid" })
         const totalPending = await collection.countDocuments({ paymentStatus: "pending" })
 
+        console.log("Stats:", { totalRegistered, totalPaid, totalPending })
         return {
           totalRegistered,
           totalPaid,
@@ -168,19 +206,31 @@ export const db = {
   admin: {
     async verify(username: string, password: string) {
       try {
+        console.log("Verifying admin:", username)
         const client = await clientPromise
         const db = client.db("olympiad")
         const collection = db.collection("admins")
 
+        // Ensure the collection exists
+        const collections = await db.listCollections({ name: "admins" }).toArray()
+        if (collections.length === 0) {
+          await db.createCollection("admins")
+          console.log("Created admins collection")
+          // Create default admin if collection was just created
+          await this.setupDefaultAdmin()
+        }
+
         const admin = await collection.findOne({ username })
 
         if (admin && admin.password === password) {
+          console.log("Admin verified successfully")
           return {
             username: admin.username,
             name: admin.name,
           }
         }
 
+        console.log("Admin verification failed")
         return null
       } catch (error) {
         console.error("Error verifying admin:", error)
@@ -198,6 +248,7 @@ export const db = {
 
     async setupDefaultAdmin() {
       try {
+        console.log("Setting up default admin")
         const client = await clientPromise
         const db = client.db("olympiad")
         const collection = db.collection("admins")
@@ -214,6 +265,8 @@ export const db = {
             createdAt: new Date(),
           })
           console.log("Default admin created")
+        } else {
+          console.log("Default admin already exists")
         }
       } catch (error) {
         console.error("Error setting up default admin:", error)
@@ -225,6 +278,24 @@ export const db = {
 // Initialize the database with a default admin
 export async function initDatabase() {
   try {
+    console.log("Initializing database")
+    const client = await clientPromise
+    const db = client.db("olympiad")
+
+    // Ensure collections exist
+    const collections = await db.listCollections().toArray()
+    const collectionNames = collections.map((c) => c.name)
+
+    if (!collectionNames.includes("students")) {
+      await db.createCollection("students")
+      console.log("Created students collection")
+    }
+
+    if (!collectionNames.includes("admins")) {
+      await db.createCollection("admins")
+      console.log("Created admins collection")
+    }
+
     await db.admin.setupDefaultAdmin()
     console.log("Database initialized with default admin")
     return true

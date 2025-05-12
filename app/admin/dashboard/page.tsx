@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -12,6 +13,7 @@ import { useToast } from "@/components/ui/use-toast"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { getAllStudents, updatePaymentStatus, adminLogout, getAdminSession, getAdminStats } from "@/lib/actions"
 import { Users, CreditCard, Clock, LogOut, Search, CheckCircle, XCircle } from "lucide-react"
+import { IMAGES } from "@/lib/image-paths"
 
 interface Student {
   id: string
@@ -184,11 +186,19 @@ export default function AdminDashboard() {
       <header className="bg-emerald-600 dark:bg-emerald-700 text-white py-4 border-b border-emerald-700 dark:border-emerald-800">
         <div className="container mx-auto px-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Image src="/logo.png" alt="Savar Science Society Logo" width={50} height={50} className="rounded-full" />
-            <div>
-              <h1 className="text-xl font-bold">Admin Dashboard</h1>
-              <p className="text-sm text-emerald-100">Savar Science Society</p>
-            </div>
+            <Link href="/" className="flex items-center gap-3 hover:opacity-90 transition-opacity">
+              <Image
+                src={IMAGES.LOGO || "/placeholder.svg"}
+                alt="Savar Science Society Logo"
+                width={50}
+                height={50}
+                className="rounded-full"
+              />
+              <div>
+                <h1 className="text-xl font-bold">Admin Dashboard</h1>
+                <p className="text-sm text-emerald-100">Savar Science Society</p>
+              </div>
+            </Link>
           </div>
           <div className="flex items-center gap-4">
             <p className="text-sm hidden md:block">Welcome, {adminName}</p>

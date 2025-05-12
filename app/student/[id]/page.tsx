@@ -10,6 +10,8 @@ import { Loader2, Phone, CheckCircle } from "lucide-react"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { useToast } from "@/components/ui/use-toast"
 import { MobileNav } from "@/components/mobile-nav"
+import { IMAGES, SOCIAL_LINKS } from "@/lib/image-paths"
+import { MainNav } from "@/components/main-nav"
 
 interface StudentData {
   id: string
@@ -128,24 +130,19 @@ export default function StudentProfile({ params }: { params: { id: string } }) {
       <header className="bg-emerald-600 dark:bg-emerald-700 text-white py-4 border-b border-emerald-700 dark:border-emerald-800">
         <div className="container mx-auto px-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Image src="/logo.png" alt="Savar Science Society Logo" width={50} height={50} className="rounded-full" />
-            <h1 className="text-xl font-bold">Savar Science Society</h1>
+            <Link href="/" className="flex items-center gap-3 hover:opacity-90 transition-opacity">
+              <Image
+                src={IMAGES.LOGO || "/placeholder.svg"}
+                alt="Savar Science Society Logo"
+                width={50}
+                height={50}
+                className="rounded-full"
+              />
+              <h1 className="text-xl font-bold">Savar Science Society</h1>
+            </Link>
           </div>
           <div className="flex items-center gap-4">
-            <nav className="hidden md:flex gap-6">
-              <Link href="/" className="hover:text-white">
-                Home
-              </Link>
-              <Link href="/register" className="hover:text-white">
-                Register
-              </Link>
-              <Link href="/contact" className="hover:text-white">
-                Contact
-              </Link>
-              <Link href="/admin/login" className="hover:text-white">
-                Admin
-              </Link>
-            </nav>
+            <MainNav />
             <ThemeToggle />
             <MobileNav />
           </div>
@@ -161,7 +158,13 @@ export default function StudentProfile({ params }: { params: { id: string } }) {
               <h2 className="text-xl md:text-2xl font-bold text-white mt-2">MATH & SCIENCE OLYMPIAD</h2>
             </div>
             <div className="mt-4 md:mt-0">
-              <Image src="/logo.png" alt="Savar Science Society Logo" width={80} height={80} className="rounded-full" />
+              <Image
+                src={IMAGES.LOGO || "/placeholder.svg"}
+                alt="Savar Science Society Logo"
+                width={80}
+                height={80}
+                className="rounded-full"
+              />
             </div>
           </CardHeader>
 
@@ -325,7 +328,7 @@ export default function StudentProfile({ params }: { params: { id: string } }) {
             <div className="grid grid-cols-2 gap-4 mt-8">
               <div className="flex flex-col items-center">
                 <Image
-                  src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/qrcode_www.facebook.com-5eHQehQgQurQ6wqlpiojCbKIK4Jc0q.png"
+                  src={IMAGES.FACEBOOK_QR || "/placeholder.svg"}
                   alt="Facebook QR Code"
                   width={100}
                   height={100}
@@ -335,7 +338,7 @@ export default function StudentProfile({ params }: { params: { id: string } }) {
               </div>
               <div className="flex flex-col items-center">
                 <Image
-                  src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/qrcode_www.youtube.com-s1tZ8a3uNNSEX3SZgkp1KJseQ8KeYx.png"
+                  src={IMAGES.YOUTUBE_QR || "/placeholder.svg"}
                   alt="YouTube QR Code"
                   width={100}
                   height={100}
@@ -352,10 +355,10 @@ export default function StudentProfile({ params }: { params: { id: string } }) {
         <div className="container mx-auto px-4 text-center">
           <p>© 2025 Savar Science Society. All rights reserved.</p>
           <div className="flex justify-center gap-4 mt-4">
-            <Link href="https://www.facebook.com/savarsciencesociety" className="text-white hover:text-white">
+            <Link href={SOCIAL_LINKS.FACEBOOK} className="text-white hover:text-white">
               Facebook
             </Link>
-            <Link href="https://www.youtube.com/@SavarScienceSociety" className="text-white hover:text-white">
+            <Link href={SOCIAL_LINKS.YOUTUBE} className="text-white hover:text-white">
               YouTube
             </Link>
           </div>

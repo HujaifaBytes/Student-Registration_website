@@ -93,6 +93,7 @@ export async function registerStudent(formData: FormData) {
       paymentStatus: "pending",
     })
 
+    // Force revalidation of relevant paths
     revalidatePath("/")
     revalidatePath(`/student/${studentId}`)
     revalidatePath("/admin/dashboard")
@@ -111,6 +112,7 @@ export async function registerStudent(formData: FormData) {
   }
 }
 
+// Other functions remain the same...
 export async function getStudentById(id: string) {
   try {
     const student = await db.student.findById(id)

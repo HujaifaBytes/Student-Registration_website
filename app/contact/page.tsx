@@ -5,6 +5,8 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { Phone, Facebook, Youtube } from "lucide-react"
 import { MobileNav } from "@/components/mobile-nav"
+import { IMAGES, SOCIAL_LINKS } from "@/lib/image-paths"
+import { MainNav } from "@/components/main-nav"
 
 export default function ContactPage() {
   return (
@@ -12,24 +14,19 @@ export default function ContactPage() {
       <header className="bg-emerald-600 dark:bg-emerald-700 text-white py-4 border-b border-emerald-700 dark:border-emerald-800">
         <div className="container mx-auto px-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Image src="/logo.png" alt="Savar Science Society Logo" width={50} height={50} className="rounded-full" />
-            <h1 className="text-xl font-bold">Savar Science Society</h1>
+            <Link href="/" className="flex items-center gap-3 hover:opacity-90 transition-opacity">
+              <Image
+                src={IMAGES.LOGO || "/placeholder.svg"}
+                alt="Savar Science Society Logo"
+                width={50}
+                height={50}
+                className="rounded-full"
+              />
+              <h1 className="text-xl font-bold">Savar Science Society</h1>
+            </Link>
           </div>
           <div className="flex items-center gap-4">
-            <nav className="hidden md:flex gap-6">
-              <Link href="/" className="hover:text-white">
-                Home
-              </Link>
-              <Link href="/register" className="hover:text-white">
-                Register
-              </Link>
-              <Link href="/contact" className="hover:text-white">
-                Contact
-              </Link>
-              <Link href="/admin/login" className="hover:text-white">
-                Admin
-              </Link>
-            </nav>
+            <MainNav />
             <ThemeToggle />
             <MobileNav />
           </div>
@@ -53,7 +50,7 @@ export default function ContactPage() {
               </p>
               <div className="flex flex-col items-center">
                 <Image
-                  src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/qrcode_www.facebook.com-5eHQehQgQurQ6wqlpiojCbKIK4Jc0q.png"
+                  src={IMAGES.FACEBOOK_QR || "/placeholder.svg"}
                   alt="Facebook QR Code"
                   width={200}
                   height={200}
@@ -62,7 +59,7 @@ export default function ContactPage() {
                 <p className="text-emerald-700 dark:text-emerald-400 text-sm mb-3">☝️Follow on Facebook</p>
               </div>
               <Button asChild className="bg-blue-600 hover:bg-blue-700 mt-2">
-                <Link href="https://www.facebook.com/savarsciencesociety" target="_blank">
+                <Link href={SOCIAL_LINKS.FACEBOOK} target="_blank">
                   <Facebook className="mr-2 h-4 w-4" /> Join Our Page
                 </Link>
               </Button>
@@ -82,7 +79,7 @@ export default function ContactPage() {
               </p>
               <div className="flex flex-col items-center">
                 <Image
-                  src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/qrcode_www.youtube.com-s1tZ8a3uNNSEX3SZgkp1KJseQ8KeYx.png"
+                  src={IMAGES.YOUTUBE_QR || "/placeholder.svg"}
                   alt="YouTube QR Code"
                   width={200}
                   height={200}
@@ -91,7 +88,7 @@ export default function ContactPage() {
                 <p className="text-emerald-700 dark:text-emerald-400 text-sm mb-3">☝️Visit Our Channel</p>
               </div>
               <Button asChild className="bg-red-600 hover:bg-red-700 mt-2">
-                <Link href="https://www.youtube.com/@SavarScienceSociety" target="_blank">
+                <Link href={SOCIAL_LINKS.YOUTUBE} target="_blank">
                   <Youtube className="mr-2 h-4 w-4" /> Visit Our Channel
                 </Link>
               </Button>
@@ -166,10 +163,10 @@ export default function ContactPage() {
         <div className="container mx-auto px-4 text-center">
           <p>© 2025 Savar Science Society. All rights reserved.</p>
           <div className="flex justify-center gap-4 mt-4">
-            <Link href="https://www.facebook.com/savarsciencesociety" className="text-white hover:text-white">
+            <Link href={SOCIAL_LINKS.FACEBOOK} className="text-white hover:text-white">
               Facebook
             </Link>
-            <Link href="https://www.youtube.com/@SavarScienceSociety" className="text-white hover:text-white">
+            <Link href={SOCIAL_LINKS.YOUTUBE} className="text-white hover:text-white">
               YouTube
             </Link>
           </div>

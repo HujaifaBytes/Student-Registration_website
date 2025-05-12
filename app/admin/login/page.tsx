@@ -14,6 +14,7 @@ import { useToast } from "@/components/ui/use-toast"
 import { adminLogin } from "@/lib/actions"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { LockKeyhole, User } from "lucide-react"
+import { IMAGES } from "@/lib/image-paths"
 
 export default function AdminLoginPage() {
   const router = useRouter()
@@ -62,11 +63,31 @@ export default function AdminLoginPage() {
       <div className="absolute top-4 right-4">
         <ThemeToggle />
       </div>
+      <div className="absolute top-4 left-4">
+        <Link href="/" className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 hover:underline">
+          <Image
+            src={IMAGES.LOGO || "/placeholder.svg"}
+            alt="Savar Science Society Logo"
+            width={30}
+            height={30}
+            className="rounded-full"
+          />
+          <span>Back to Home</span>
+        </Link>
+      </div>
 
       <Card className="w-full max-w-md border-emerald-200 dark:border-emerald-700 shadow-lg dark:bg-gray-800">
         <CardHeader className="bg-emerald-600 dark:bg-emerald-700 text-white p-6 flex flex-col items-center">
           <div className="flex items-center justify-center mb-4">
-            <Image src="/logo.png" alt="Savar Science Society Logo" width={80} height={80} className="rounded-full" />
+            <Link href="/">
+              <Image
+                src={IMAGES.LOGO || "/placeholder.svg"}
+                alt="Savar Science Society Logo"
+                width={80}
+                height={80}
+                className="rounded-full hover:opacity-90 transition-opacity"
+              />
+            </Link>
           </div>
           <h1 className="text-2xl font-bold text-center">Admin Login</h1>
           <p className="text-emerald-100 text-center mt-2">Savar Science Society Olympiad</p>

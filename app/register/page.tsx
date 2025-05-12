@@ -18,9 +18,10 @@ import { ThemeToggle } from "@/components/theme-toggle"
 import { Phone, AlertCircle } from "lucide-react"
 import { validateImageDimensions } from "@/lib/image-utils"
 import { MobileNav } from "@/components/mobile-nav"
+import { IMAGES, SOCIAL_LINKS } from "@/lib/image-paths"
+import { MainNav } from "@/components/main-nav"
 
 export default function RegisterPage() {
-  // Rest of the component remains the same
   const router = useRouter()
   const { toast } = useToast()
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -69,12 +70,8 @@ export default function RegisterPage() {
       const validation = await validateImageDimensions(file, 600, 600, 5)
 
       if (!validation.valid) {
-        setPhotoError(`Image must be 600x600 pixels. Current size: ${validation.width}x${validation.height}`)
-        // Reset the file input
-        if (photoInputRef.current) {
-          photoInputRef.current.value = ""
-        }
-        return
+        setPhotoWarning(`Image should be 600x600 pixels. Current size: ${validation.width}x${validation.height}`)
+        // We'll allow the upload but show a warning
       }
 
       setFormData({ ...formData, photo: file })
@@ -102,12 +99,8 @@ export default function RegisterPage() {
       const validation = await validateImageDimensions(file, 300, 80, 10)
 
       if (!validation.valid) {
-        setSignatureError(`Signature must be 300x80 pixels. Current size: ${validation.width}x${validation.height}`)
-        // Reset the file input
-        if (signatureInputRef.current) {
-          signatureInputRef.current.value = ""
-        }
-        return
+        setSignatureWarning(`Signature should be 300x80 pixels. Current size: ${validation.width}x${validation.height}`)
+        // We'll allow the upload but show a warning
       }
 
       setFormData({ ...formData, signature: file })
@@ -163,9 +156,7 @@ export default function RegisterPage() {
         })
 
         // Redirect to the student profile page
-        setTimeout(() => {
-          router.push(`/student/${result.studentId}`)
-        }, 2000)
+        router.push(`/student/${result.studentId}`)
       } else {
         throw new Error(result.error || "Registration failed")
       }
@@ -185,31 +176,25 @@ export default function RegisterPage() {
       <header className="bg-emerald-600 dark:bg-emerald-700 text-white py-4 border-b border-emerald-700 dark:border-emerald-800">
         <div className="container mx-auto px-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Image src="/logo.png" alt="Savar Science Society Logo" width={50} height={50} className="rounded-full" />
-            <h1 className="text-xl font-bold">Savar Science Society</h1>
+            <Link href="/" className="flex items-center gap-3 hover:opacity-90 transition-opacity">
+              <Image
+                src={IMAGES.LOGO || "/placeholder.svg"}
+                alt="Savar Science Society Logo"
+                width={50}
+                height={50}
+                className="rounded-full"
+              />
+              <h1 className="text-xl font-bold">Savar Science Society</h1>
+            </Link>
           </div>
           <div className="flex items-center gap-4">
-            <nav className="hidden md:flex gap-6">
-              <Link href="/" className="hover:text-white">
-                Home
-              </Link>
-              <Link href="/register" className="hover:text-white">
-                Register
-              </Link>
-              <Link href="/contact" className="hover:text-white">
-                Contact
-              </Link>
-              <Link href="/admin/login" className="hover:text-white">
-                Admin
-              </Link>
-            </nav>
+            <MainNav />
             <ThemeToggle />
             <MobileNav />
           </div>
         </div>
       </header>
 
-      {/* Rest of the component remains the same */}
       <main className="container mx-auto px-4 py-12">
         <Card className="max-w-4xl mx-auto border-0 shadow-none">
           <CardHeader className="bg-emerald-600 dark:bg-emerald-700 p-4 flex flex-col md:flex-row items-center justify-between rounded-t-lg">
@@ -219,7 +204,13 @@ export default function RegisterPage() {
               <h2 className="text-xl md:text-2xl font-bold text-white mt-2">MATH & SCIENCE OLYMPIAD</h2>
             </div>
             <div className="mt-4 md:mt-0">
-              <Image src="/logo.png" alt="Savar Science Society Logo" width={80} height={80} className="rounded-full" />
+              <Image
+                src={IMAGES.LOGO || "/placeholder.svg"}
+                alt="Savar Science Society Logo"
+                width={80}
+                height={80}
+                className="rounded-full"
+              />
             </div>
           </CardHeader>
 
@@ -616,7 +607,7 @@ export default function RegisterPage() {
                   <p className="text-gray-700 dark:text-gray-300 text-center text-sm mb-2">Register Signature</p>
                   <div className="h-20 border border-gray-300 dark:border-gray-600 flex items-center justify-center bg-white dark:bg-gray-700 relative">
                     <Image
-                      src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/IMG20250508120741300x80.jpg-GhbORCpIpsHsgL9qEjknSjcdet0pKE.jpeg"
+                      src={IMAGES.REGISTER_SIGNATURE || "/placeholder.svg"}
                       alt="Register Signature"
                       width={300}
                       height={80}
@@ -635,7 +626,7 @@ export default function RegisterPage() {
               <div className="grid grid-cols-2 gap-4 mt-4">
                 <div className="flex flex-col items-center">
                   <Image
-                    src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/qrcode_www.facebook.com-5eHQehQgQurQ6wqlpiojCbKIK4Jc0q.png"
+                    src={IMAGES.FACEBOOK_QR || "/placeholder.svg"}
                     alt="Facebook QR Code"
                     width={100}
                     height={100}
@@ -645,7 +636,7 @@ export default function RegisterPage() {
                 </div>
                 <div className="flex flex-col items-center">
                   <Image
-                    src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/qrcode_www.youtube.com-s1tZ8a3uNNSEX3SZgkp1KJseQ8KeYx.png"
+                    src={IMAGES.YOUTUBE_QR || "/placeholder.svg"}
                     alt="YouTube QR Code"
                     width={100}
                     height={100}
@@ -677,10 +668,10 @@ export default function RegisterPage() {
         <div className="container mx-auto px-4 text-center">
           <p>© 2025 Savar Science Society. All rights reserved.</p>
           <div className="flex justify-center gap-4 mt-4">
-            <Link href="https://www.facebook.com/savarsciencesociety" className="text-white hover:text-white">
+            <Link href={SOCIAL_LINKS.FACEBOOK} className="text-white hover:text-white">
               Facebook
             </Link>
-            <Link href="https://www.youtube.com/@SavarScienceSociety" className="text-white hover:text-white">
+            <Link href={SOCIAL_LINKS.YOUTUBE} className="text-white hover:text-white">
               YouTube
             </Link>
           </div>

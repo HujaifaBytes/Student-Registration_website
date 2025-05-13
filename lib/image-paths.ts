@@ -1,7 +1,7 @@
 // Centralized image paths for the application
 export const IMAGES = {
   // Logos
-  LOGO: "/images/logo.png",
+  LOGO: "/images/savar-logo.png",
 
   // QR Codes
   FACEBOOK_QR:

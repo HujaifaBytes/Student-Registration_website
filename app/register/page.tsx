@@ -15,7 +15,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { useToast } from "@/components/ui/use-toast"
 import { registerStudent } from "@/lib/actions"
 import { ThemeToggle } from "@/components/theme-toggle"
-import { Phone, AlertCircle, Loader2 } from "lucide-react"
+import { Phone, AlertCircle, Loader2, CheckCircle } from "lucide-react"
 import { validateImageDimensions } from "@/lib/image-utils"
 import { MobileNav } from "@/components/mobile-nav"
 import { IMAGES, SOCIAL_LINKS } from "@/lib/image-paths"
@@ -32,6 +32,8 @@ export default function RegisterPage() {
   const [photoWarning, setPhotoWarning] = useState<string | null>(null)
   const [signatureWarning, setSignatureWarning] = useState<string | null>(null)
   const [formErrors, setFormErrors] = useState<Record<string, string>>({})
+  const [registrationSuccess, setRegistrationSuccess] = useState(false)
+  const [registrationNumber, setRegistrationNumber] = useState("")
   const photoInputRef = useRef<HTMLInputElement>(null)
   const signatureInputRef = useRef<HTMLInputElement>(null)
   const formRef = useRef<HTMLFormElement>(null)
@@ -196,13 +198,19 @@ export default function RegisterPage() {
       console.log("Form submission result:", result)
 
       if (result.success) {
+        // Show success message with registration number
+        setRegistrationSuccess(true)
+        setRegistrationNumber(result.registrationNumber || "")
+
         toast({
           title: "Registration Successful",
-          description: "Your registration has been submitted successfully. You will be redirected to your profile.",
+          description: `Your registration has been submitted successfully. Your registration number is ${result.registrationNumber}`,
         })
 
-        // Redirect to the student profile page
-        router.push(`/student/${result.studentId}`)
+        // Wait 5 seconds before redirecting to allow user to see the success message
+        setTimeout(() => {
+          router.push(`/student/${result.studentId}`)
+        }, 5000)
       } else {
         throw new Error(result.error || "Registration failed")
       }
@@ -213,9 +221,90 @@ export default function RegisterPage() {
         description: error instanceof Error ? error.message : "An unexpected error occurred",
         variant: "destructive",
       })
-    } finally {
       setIsSubmitting(false)
     }
+  }
+
+  // If registration is successful, show success message
+  if (registrationSuccess) {
+    return (
+      <div className="min-h-screen bg-white dark:bg-gray-900">
+        <header className="bg-emerald-600 dark:bg-emerald-700 text-white py-4 border-b border-emerald-700 dark:border-emerald-800">
+          <div className="container mx-auto px-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Link href="/" className="flex items-center gap-3 hover:opacity-90 transition-opacity">
+                <Image
+                  src={IMAGES.LOGO || "/placeholder.svg"}
+                  alt="Savar Science Society Logo"
+                  width={50}
+                  height={50}
+                  className="rounded-full"
+                />
+                <h1 className="text-xl font-bold">Savar Science Society</h1>
+              </Link>
+            </div>
+            <div className="flex items-center gap-4">
+              <MainNav />
+              <ThemeToggle />
+              <MobileNav />
+            </div>
+          </div>
+        </header>
+
+        <main className="container mx-auto px-4 py-12">
+          <Card className="max-w-2xl mx-auto border-0 shadow-lg">
+            <CardHeader className="bg-emerald-600 dark:bg-emerald-700 p-4 flex flex-col items-center justify-center rounded-t-lg">
+              <div className="text-center">
+                <h1 className="text-2xl md:text-3xl font-bold text-white">Registration Successful</h1>
+              </div>
+            </CardHeader>
+
+            <CardContent className="p-8 border border-gray-200 dark:border-gray-700 rounded-b-lg dark:bg-gray-800">
+              <div className="flex flex-col items-center justify-center text-center">
+                <div className="w-16 h-16 bg-emerald-100 dark:bg-emerald-900 rounded-full flex items-center justify-center mb-4">
+                  <CheckCircle className="w-8 h-8 text-emerald-600 dark:text-emerald-400" />
+                </div>
+
+                <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-2">Thank you for registering!</h2>
+
+                <p className="text-gray-600 dark:text-gray-300 mb-6">
+                  Your registration has been submitted successfully.
+                </p>
+
+                <div className="bg-emerald-50 dark:bg-emerald-900/30 p-4 rounded-lg border border-emerald-100 dark:border-emerald-800 mb-6 w-full">
+                  <p className="text-gray-700 dark:text-gray-300 mb-2">Your Registration Number:</p>
+                  <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{registrationNumber}</p>
+                </div>
+
+                <p className="text-gray-600 dark:text-gray-300 mb-6">
+                  You will be redirected to your profile page in a few seconds. Please save your registration number for
+                  future reference.
+                </p>
+
+                <div className="flex gap-4">
+                  <Button
+                    asChild
+                    className="bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-600"
+                  >
+                    <Link href={`/student/${registrationNumber}`}>View Profile</Link>
+                  </Button>
+
+                  <Button asChild variant="outline">
+                    <Link href="/">Return to Home</Link>
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </main>
+
+        <footer className="bg-emerald-600 dark:bg-emerald-700 text-white py-8 border-t border-emerald-700 dark:border-emerald-800 mt-12">
+          <div className="container mx-auto px-4 text-center">
+            <p>© 2025 Savar Science Society. All rights reserved.</p>
+          </div>
+        </footer>
+      </div>
+    )
   }
 
   return (

@@ -2,7 +2,6 @@
 
 import { revalidatePath } from "next/cache"
 import { db } from "@/lib/db"
-import { generateId } from "@/lib/utils"
 import { cookies } from "next/headers"
 
 export async function registerStudent(formData: FormData) {
@@ -70,8 +69,23 @@ export async function registerStudent(formData: FormData) {
       // Continue with registration even if duplicate check fails
     }
 
-    // Generate registration number
-    const registrationNumber = `SSS-${new Date().getFullYear()}-${generateId(6)}`
+    // Generate registration number - ensure it's unique
+    const currentYear = new Date().getFullYear()
+    const prefix = `SSS-${currentYear}-`
+
+    // Get the count of existing students to create a sequential ID
+    let studentCount = 0
+    try {
+      const students = await db.student.findAll()
+      studentCount = students.length
+    } catch (error) {
+      console.error("Error getting student count:", error)
+    }
+
+    // Create a sequential registration number with padding
+    const sequentialId = (studentCount + 1).toString().padStart(4, "0")
+    const registrationNumber = `${prefix}${sequentialId}`
+
     console.log("Generated registration number:", registrationNumber)
 
     // Handle photo upload (in a real app, you would upload to a storage service)
@@ -123,6 +137,7 @@ export async function registerStudent(formData: FormData) {
     return {
       success: true,
       studentId,
+      registrationNumber,
       message: "Registration successful",
     }
   } catch (error) {

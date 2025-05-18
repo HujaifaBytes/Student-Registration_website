@@ -34,6 +34,7 @@ export default function RegisterPage() {
   const [formErrors, setFormErrors] = useState<Record<string, string>>({})
   const [registrationSuccess, setRegistrationSuccess] = useState(false)
   const [registrationNumber, setRegistrationNumber] = useState("")
+  const [studentId, setStudentId] = useState("")
   const photoInputRef = useRef<HTMLInputElement>(null)
   const signatureInputRef = useRef<HTMLInputElement>(null)
   const formRef = useRef<HTMLFormElement>(null)
@@ -48,11 +49,7 @@ export default function RegisterPage() {
     motherMobile: "",
     address: "",
     gender: "",
-    dateOfBirth: {
-      day: "",
-      month: "",
-      year: "",
-    },
+    dateOfBirth: "",
     educationalInstitute: "",
     dreamUniversity: "",
     previousScholarship: "no",
@@ -73,12 +70,7 @@ export default function RegisterPage() {
     if (!formData.fatherMobile) errors.fatherMobile = "Father's mobile number is required"
     if (!formData.address) errors.address = "Address is required"
     if (!formData.gender) errors.gender = "Please select a gender"
-
-    // Validate date of birth
-    if (!formData.dateOfBirth.day || !formData.dateOfBirth.month || !formData.dateOfBirth.year) {
-      errors.dateOfBirth = "Complete date of birth is required"
-    }
-
+    if (!formData.dateOfBirth) errors.dateOfBirth = "Date of birth is required"
     if (!formData.educationalInstitute) errors.educationalInstitute = "Educational institute is required"
     if (!formData.dreamUniversity) errors.dreamUniversity = "Please select a dream university"
     if (!formData.photo) errors.photo = "Photo is required"
@@ -162,9 +154,6 @@ export default function RegisterPage() {
     setIsSubmitting(true)
 
     try {
-      // Format date of birth
-      const dob = `${formData.dateOfBirth.day}/${formData.dateOfBirth.month}/${formData.dateOfBirth.year}`
-
       // Create form data for submission
       const formDataToSubmit = new FormData()
 
@@ -178,7 +167,7 @@ export default function RegisterPage() {
       formDataToSubmit.append("motherMobile", formData.motherMobile || "")
       formDataToSubmit.append("address", formData.address)
       formDataToSubmit.append("gender", formData.gender)
-      formDataToSubmit.append("dateOfBirth", dob)
+      formDataToSubmit.append("dateOfBirth", formData.dateOfBirth)
       formDataToSubmit.append("educationalInstitute", formData.educationalInstitute)
       formDataToSubmit.append("dreamUniversity", formData.dreamUniversity)
       formDataToSubmit.append("previousScholarship", formData.previousScholarship)
@@ -201,16 +190,12 @@ export default function RegisterPage() {
         // Show success message with registration number
         setRegistrationSuccess(true)
         setRegistrationNumber(result.registrationNumber || "")
+        setStudentId(result.studentId || "")
 
         toast({
           title: "Registration Successful",
           description: `Your registration has been submitted successfully. Your registration number is ${result.registrationNumber}`,
         })
-
-        // Wait 5 seconds before redirecting to allow user to see the success message
-        setTimeout(() => {
-          router.push(`/student/${result.studentId}`)
-        }, 5000)
       } else {
         throw new Error(result.error || "Registration failed")
       }
@@ -221,6 +206,7 @@ export default function RegisterPage() {
         description: error instanceof Error ? error.message : "An unexpected error occurred",
         variant: "destructive",
       })
+    } finally {
       setIsSubmitting(false)
     }
   }
@@ -277,8 +263,7 @@ export default function RegisterPage() {
                 </div>
 
                 <p className="text-gray-600 dark:text-gray-300 mb-6">
-                  You will be redirected to your profile page in a few seconds. Please save your registration number for
-                  future reference.
+                  Please save your registration number for future reference.
                 </p>
 
                 <div className="flex gap-4">
@@ -286,7 +271,7 @@ export default function RegisterPage() {
                     asChild
                     className="bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-600"
                   >
-                    <Link href={`/student/${registrationNumber}`}>View Profile</Link>
+                    <Link href={`/student/${studentId}`}>View Profile</Link>
                   </Button>
 
                   <Button asChild variant="outline">
@@ -628,54 +613,22 @@ export default function RegisterPage() {
                     </div>
 
                     <div>
-                      <Label className="text-gray-700 dark:text-gray-300 block mb-2">Date of Birth:</Label>
-                      <div className="flex space-x-2">
-                        <Input
-                          placeholder="DD"
-                          className={`w-16 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 dark:bg-gray-700 ${
-                            formErrors.dateOfBirth ? "border-red-500" : ""
-                          }`}
-                          value={formData.dateOfBirth.day}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              dateOfBirth: { ...formData.dateOfBirth, day: e.target.value },
-                            })
-                          }
-                          maxLength={2}
-                          required
-                        />
-                        <Input
-                          placeholder="MM"
-                          className={`w-16 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 dark:bg-gray-700 ${
-                            formErrors.dateOfBirth ? "border-red-500" : ""
-                          }`}
-                          value={formData.dateOfBirth.month}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              dateOfBirth: { ...formData.dateOfBirth, month: e.target.value },
-                            })
-                          }
-                          maxLength={2}
-                          required
-                        />
-                        <Input
-                          placeholder="YYYY"
-                          className={`w-20 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 dark:bg-gray-700 ${
-                            formErrors.dateOfBirth ? "border-red-500" : ""
-                          }`}
-                          value={formData.dateOfBirth.year}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              dateOfBirth: { ...formData.dateOfBirth, year: e.target.value },
-                            })
-                          }
-                          maxLength={4}
-                          required
-                        />
-                      </div>
+                      <Label htmlFor="dateOfBirth" className="text-gray-700 dark:text-gray-300 block mb-2">
+                        Date of Birth:
+                      </Label>
+                      <Input
+                        id="dateOfBirth"
+                        type="date"
+                        value={formData.dateOfBirth}
+                        onChange={(e) => {
+                          setFormData({ ...formData, dateOfBirth: e.target.value })
+                          setFormErrors((prev) => ({ ...prev, dateOfBirth: undefined }))
+                        }}
+                        className={`border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 dark:bg-gray-700 ${
+                          formErrors.dateOfBirth ? "border-red-500" : ""
+                        }`}
+                        required
+                      />
                       {formErrors.dateOfBirth && <p className="text-red-500 text-xs mt-1">{formErrors.dateOfBirth}</p>}
                     </div>
                   </div>

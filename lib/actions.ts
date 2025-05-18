@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache"
 import { cookies } from "next/headers"
 import { supabaseServer } from "./supabase"
+import { processImage } from "./image-processing"
 
 export async function registerStudent(formData: FormData) {
   try {
@@ -88,41 +89,64 @@ export async function registerStudent(formData: FormData) {
     const registrationNumber = registrationData || `SSS-${new Date().getFullYear()}-0001`
     console.log("Generated registration number:", registrationNumber)
 
-    // Handle photo upload (in a real app, you would upload to Supabase Storage)
+    // Handle photo upload
     let photoUrl = null
     if (photo && photo.size > 0) {
-      // For now, we'll just use a placeholder
-      photoUrl = `/placeholder.svg?height=200&width=150`
+      try {
+        // Process the image to ensure it's 600x600
+        const { buffer: processedPhoto, contentType } = await processImage(photo, 600, 600)
 
-      // In a production app, you would upload to Supabase Storage like this:
-      /*
-      const photoBuffer = await photo.arrayBuffer()
-      const photoFileName = `${registrationNumber}-photo.${photo.name.split('.').pop()}`
-      const { data: photoData, error: photoError } = await supabaseServer.storage
-        .from('student-photos')
-        .upload(photoFileName, photoBuffer, {
-          contentType: photo.type,
-        })
-      
-      if (photoError) {
-        console.error("Error uploading photo:", photoError)
-      } else if (photoData) {
-        const { data: photoUrlData } = supabaseServer.storage
-          .from('student-photos')
-          .getPublicUrl(photoData.path)
-        
-        photoUrl = photoUrlData.publicUrl
+        // Upload to Supabase Storage
+        const photoFileName = `${registrationNumber.replace(/\//g, "-")}-photo.jpg`
+        const { data: photoData, error: photoError } = await supabaseServer.storage
+          .from("student-photos")
+          .upload(photoFileName, processedPhoto, {
+            contentType,
+            upsert: true,
+          })
+
+        if (photoError) {
+          console.error("Error uploading photo:", photoError)
+        } else if (photoData) {
+          const { data: photoUrlData } = supabaseServer.storage.from("student-photos").getPublicUrl(photoData.path)
+
+          photoUrl = photoUrlData.publicUrl
+        }
+      } catch (error) {
+        console.error("Error processing photo:", error)
+        // If processing fails, we'll continue without a photo
       }
-      */
     }
 
-    // Handle signature upload
+    // Handle signature upload (optional)
     let signatureUrl = null
     if (signature && signature.size > 0) {
-      // For now, we'll just use a placeholder
-      signatureUrl = `/placeholder.svg?height=80&width=300`
+      try {
+        // Process the signature to ensure it's 300x80
+        const { buffer: processedSignature, contentType } = await processImage(signature, 300, 80)
 
-      // Similar code for signature upload would go here in production
+        // Upload to Supabase Storage
+        const signatureFileName = `${registrationNumber.replace(/\//g, "-")}-signature.jpg`
+        const { data: signatureData, error: signatureError } = await supabaseServer.storage
+          .from("student-signatures")
+          .upload(signatureFileName, processedSignature, {
+            contentType,
+            upsert: true,
+          })
+
+        if (signatureError) {
+          console.error("Error uploading signature:", signatureError)
+        } else if (signatureData) {
+          const { data: signatureUrlData } = supabaseServer.storage
+            .from("student-signatures")
+            .getPublicUrl(signatureData.path)
+
+          signatureUrl = signatureUrlData.publicUrl
+        }
+      } catch (error) {
+        console.error("Error processing signature:", error)
+        // If processing fails, we'll continue without a signature
+      }
     }
 
     console.log("Creating student record in Supabase")
@@ -269,6 +293,33 @@ export async function updatePaymentStatus(id: string, status: string) {
 
 export async function deleteStudent(id: string) {
   try {
+    // First get the student to get file paths
+    const { data: student, error: getError } = await supabaseServer
+      .from("students")
+      .select("registration_number, photo_url, signature_url")
+      .eq("id", id)
+      .single()
+
+    if (getError) {
+      console.error("Error fetching student for deletion:", getError)
+    } else if (student) {
+      // Delete files from storage if they exist
+      if (student.photo_url && !student.photo_url.includes("placeholder")) {
+        const photoPath = student.photo_url.split("/").pop() // Get filename from URL
+        if (photoPath) {
+          await supabaseServer.storage.from("student-photos").remove([photoPath])
+        }
+      }
+
+      if (student.signature_url && !student.signature_url.includes("placeholder")) {
+        const signaturePath = student.signature_url.split("/").pop() // Get filename from URL
+        if (signaturePath) {
+          await supabaseServer.storage.from("student-signatures").remove([signaturePath])
+        }
+      }
+    }
+
+    // Delete the student record
     const { error } = await supabaseServer.from("students").delete().eq("id", id)
 
     if (error) {

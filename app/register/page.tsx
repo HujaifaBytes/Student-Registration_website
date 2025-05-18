@@ -74,6 +74,7 @@ export default function RegisterPage() {
     if (!formData.educationalInstitute) errors.educationalInstitute = "Educational institute is required"
     if (!formData.dreamUniversity) errors.dreamUniversity = "Please select a dream university"
     if (!formData.photo) errors.photo = "Photo is required"
+    // Signature is now optional
 
     setFormErrors(errors)
     return Object.keys(errors).length === 0
@@ -754,6 +755,9 @@ export default function RegisterPage() {
                     />
                     <p className="text-red-500 text-xs mt-1">
                       Signature must be 300 x 80 pixels; within 600KB and background should be white
+                    </p>
+                    <p className="text-amber-500 text-xs mt-1">
+                      Signature is optional but recommended for complete registration
                     </p>
                     {signatureError && (
                       <div className="flex items-center mt-1 text-red-500 text-xs">

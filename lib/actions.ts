@@ -34,6 +34,8 @@ export async function registerStudent(formData: FormData) {
       fatherMobile,
       gender,
       dateOfBirth,
+      hasPhoto: !!photo,
+      photoSize: photo ? photo.size : 0,
     })
 
     // Validate required fields
@@ -93,11 +95,16 @@ export async function registerStudent(formData: FormData) {
     let photoUrl = null
     if (photo && photo.size > 0) {
       try {
+        console.log("Processing photo for upload...")
         // Process the image to ensure it's 600x600
         const { buffer: processedPhoto, contentType } = await processImage(photo, 600, 600)
+        console.log("Photo processed successfully, size:", processedPhoto.length)
+
+        // Create a safe filename
+        const photoFileName = `${registrationNumber.replace(/[^a-zA-Z0-9]/g, "-")}-photo.jpg`
+        console.log("Uploading photo with filename:", photoFileName)
 
         // Upload to Supabase Storage
-        const photoFileName = `${registrationNumber.replace(/\//g, "-")}-photo.jpg`
         const { data: photoData, error: photoError } = await supabaseServer.storage
           .from("student-photos")
           .upload(photoFileName, processedPhoto, {
@@ -106,27 +113,39 @@ export async function registerStudent(formData: FormData) {
           })
 
         if (photoError) {
-          console.error("Error uploading photo:", photoError)
+          console.error("Error uploading photo to Supabase storage:", photoError)
         } else if (photoData) {
-          const { data: photoUrlData } = supabaseServer.storage.from("student-photos").getPublicUrl(photoData.path)
+          console.log("Photo uploaded successfully, path:", photoData.path)
 
+          // Get the public URL
+          const { data: photoUrlData } = supabaseServer.storage.from("student-photos").getPublicUrl(photoData.path)
           photoUrl = photoUrlData.publicUrl
+          console.log("Photo public URL:", photoUrl)
         }
       } catch (error) {
-        console.error("Error processing photo:", error)
+        console.error("Error processing or uploading photo:", error)
         // If processing fails, we'll continue without a photo
+        photoUrl = "/placeholder.svg?height=200&width=150"
       }
+    } else {
+      console.log("No photo provided or photo is empty")
+      photoUrl = "/placeholder.svg?height=200&width=150"
     }
 
     // Handle signature upload (optional)
     let signatureUrl = null
     if (signature && signature.size > 0) {
       try {
+        console.log("Processing signature for upload...")
         // Process the signature to ensure it's 300x80
         const { buffer: processedSignature, contentType } = await processImage(signature, 300, 80)
+        console.log("Signature processed successfully, size:", processedSignature.length)
+
+        // Create a safe filename
+        const signatureFileName = `${registrationNumber.replace(/[^a-zA-Z0-9]/g, "-")}-signature.jpg`
+        console.log("Uploading signature with filename:", signatureFileName)
 
         // Upload to Supabase Storage
-        const signatureFileName = `${registrationNumber.replace(/\//g, "-")}-signature.jpg`
         const { data: signatureData, error: signatureError } = await supabaseServer.storage
           .from("student-signatures")
           .upload(signatureFileName, processedSignature, {
@@ -135,21 +154,28 @@ export async function registerStudent(formData: FormData) {
           })
 
         if (signatureError) {
-          console.error("Error uploading signature:", signatureError)
+          console.error("Error uploading signature to Supabase storage:", signatureError)
         } else if (signatureData) {
+          console.log("Signature uploaded successfully, path:", signatureData.path)
+
+          // Get the public URL
           const { data: signatureUrlData } = supabaseServer.storage
             .from("student-signatures")
             .getPublicUrl(signatureData.path)
-
           signatureUrl = signatureUrlData.publicUrl
+          console.log("Signature public URL:", signatureUrl)
         }
       } catch (error) {
-        console.error("Error processing signature:", error)
+        console.error("Error processing or uploading signature:", error)
         // If processing fails, we'll continue without a signature
+        signatureUrl = "/placeholder.svg?height=80&width=300"
       }
+    } else {
+      console.log("No signature provided or signature is empty")
+      signatureUrl = "/placeholder.svg?height=80&width=300"
     }
 
-    console.log("Creating student record in Supabase")
+    console.log("Creating student record in Supabase with photo URL:", photoUrl)
 
     // Create student record in Supabase
     const { data: student, error: insertError } = await supabaseServer

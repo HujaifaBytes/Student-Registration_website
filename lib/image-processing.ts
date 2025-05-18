@@ -12,23 +12,29 @@ export async function processImage(
   targetWidth = 600,
   targetHeight = 600,
 ): Promise<{ buffer: Buffer; contentType: string }> {
-  // Convert File to Buffer
-  const fileBuffer = Buffer.from(await file.arrayBuffer())
+  try {
+    // Convert File to Buffer
+    const arrayBuffer = await file.arrayBuffer()
+    const fileBuffer = Buffer.from(arrayBuffer)
 
-  // Process with sharp
-  const processedImageBuffer = await sharp(fileBuffer)
-    .resize({
-      width: targetWidth,
-      height: targetHeight,
-      fit: "cover",
-      position: "center",
-    })
-    .toFormat("jpeg")
-    .jpeg({ quality: 85 })
-    .toBuffer()
+    // Process with sharp
+    const processedImageBuffer = await sharp(fileBuffer)
+      .resize({
+        width: targetWidth,
+        height: targetHeight,
+        fit: "cover",
+        position: "center",
+      })
+      .toFormat("jpeg")
+      .jpeg({ quality: 85 })
+      .toBuffer()
 
-  return {
-    buffer: processedImageBuffer,
-    contentType: "image/jpeg",
+    return {
+      buffer: processedImageBuffer,
+      contentType: "image/jpeg",
+    }
+  } catch (error) {
+    console.error("Error processing image:", error)
+    throw error
   }
 }

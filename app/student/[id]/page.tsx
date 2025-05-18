@@ -30,6 +30,7 @@ interface StudentData {
   previousScholarship: string
   scholarshipDetails: string
   photoUrl: string
+  signatureUrl: string
   registrationDate: string
   registrationNumber: string
   paymentStatus: string
@@ -41,6 +42,7 @@ export default function StudentProfile({ params }: { params: { id: string } }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [processingPayment, setProcessingPayment] = useState(false)
+  const [photoError, setPhotoError] = useState(false)
 
   useEffect(() => {
     const fetchStudentData = async () => {
@@ -180,12 +182,13 @@ export default function StudentProfile({ params }: { params: { id: string } }) {
                 <p className="text-gray-700 dark:text-gray-300">Registered on: {student.registrationDate}</p>
               </div>
               <div className="w-32 h-40 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 relative overflow-hidden">
-                {student.photoUrl ? (
+                {student.photoUrl && !photoError ? (
                   <Image
                     src={student.photoUrl || "/placeholder.svg"}
                     alt="Student Photo"
                     fill
                     style={{ objectFit: "cover" }}
+                    onError={() => setPhotoError(true)}
                   />
                 ) : (
                   <div className="flex items-center justify-center h-full">

@@ -81,6 +81,7 @@ export default function AdminDashboard() {
   const [studentToDelete, setStudentToDelete] = useState<string | null>(null)
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [photoErrors, setPhotoErrors] = useState<Record<string, boolean>>({})
   const [newStudent, setNewStudent] = useState({
     fullName: "",
     class: "",
@@ -331,6 +332,10 @@ export default function AdminDashboard() {
         variant: "destructive",
       })
     }
+  }
+
+  const handleImageError = (studentId: string) => {
+    setPhotoErrors((prev) => ({ ...prev, [studentId]: true }))
   }
 
   if (loading) {
@@ -688,12 +693,13 @@ export default function AdminDashboard() {
                       <TableRow key={student.id} className="border-t border-gray-200 dark:border-gray-700">
                         <TableCell>
                           <div className="w-10 h-10 relative overflow-hidden rounded-full">
-                            {student.photoUrl ? (
+                            {student.photoUrl && !photoErrors[student.id] ? (
                               <Image
                                 src={student.photoUrl || "/placeholder.svg"}
                                 alt={student.fullName}
                                 fill
                                 className="object-cover"
+                                onError={() => handleImageError(student.id)}
                               />
                             ) : (
                               <div className="w-10 h-10 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center">

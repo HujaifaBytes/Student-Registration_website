@@ -11,9 +11,40 @@ import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useToast } from "@/components/ui/use-toast"
 import { ThemeToggle } from "@/components/theme-toggle"
-import { getAllStudents, updatePaymentStatus, adminLogout, getAdminSession, getAdminStats } from "@/lib/actions"
-import { Users, CreditCard, Clock, LogOut, Search, CheckCircle, XCircle } from "lucide-react"
+import {
+  getAllStudents,
+  updatePaymentStatus,
+  adminLogout,
+  getAdminSession,
+  getAdminStats,
+  deleteStudent,
+  addStudent,
+} from "@/lib/actions"
+import { Users, CreditCard, Clock, LogOut, Search, CheckCircle, XCircle, Trash2, UserPlus } from "lucide-react"
 import { IMAGES } from "@/lib/image-paths"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 
 interface Student {
   id: string
@@ -47,6 +78,25 @@ export default function AdminDashboard() {
   const [filter, setFilter] = useState("all")
   const [searchTerm, setSearchTerm] = useState("")
   const [adminName, setAdminName] = useState("")
+  const [studentToDelete, setStudentToDelete] = useState<string | null>(null)
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [newStudent, setNewStudent] = useState({
+    fullName: "",
+    class: "",
+    olympiadType: "",
+    fatherName: "",
+    motherName: "",
+    fatherMobile: "",
+    motherMobile: "",
+    address: "",
+    gender: "male",
+    dateOfBirth: "",
+    educationalInstitute: "",
+    dreamUniversity: "General",
+    previousScholarship: "no",
+    scholarshipDetails: "",
+  })
 
   useEffect(() => {
     const checkSession = async () => {
@@ -145,6 +195,119 @@ export default function AdminDashboard() {
         description: error instanceof Error ? error.message : "Failed to update payment status",
         variant: "destructive",
       })
+    }
+  }
+
+  const handleDeleteStudent = async (id: string) => {
+    try {
+      const result = await deleteStudent(id)
+
+      if (result.success) {
+        // Update the local state
+        setStudents((prevStudents) => prevStudents.filter((student) => student.id !== id))
+
+        // Update stats
+        const deletedStudent = students.find((student) => student.id === id)
+        const newStats = { ...stats }
+        newStats.totalRegistered -= 1
+        if (deletedStudent?.paymentStatus === "paid") {
+          newStats.totalPaid -= 1
+        } else {
+          newStats.totalPending -= 1
+        }
+        setStats(newStats)
+
+        toast({
+          title: "Success",
+          description: "Student deleted successfully",
+        })
+      } else {
+        throw new Error(result.error || "Failed to delete student")
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to delete student",
+        variant: "destructive",
+      })
+    } finally {
+      setStudentToDelete(null)
+    }
+  }
+
+  const handleAddStudent = async () => {
+    setIsSubmitting(true)
+
+    try {
+      // Validate required fields
+      const requiredFields = [
+        "fullName",
+        "class",
+        "olympiadType",
+        "fatherName",
+        "motherName",
+        "fatherMobile",
+        "address",
+        "dateOfBirth",
+        "educationalInstitute",
+        "dreamUniversity",
+      ]
+
+      const missingFields = requiredFields.filter((field) => !newStudent[field as keyof typeof newStudent])
+
+      if (missingFields.length > 0) {
+        throw new Error(`Please fill in all required fields: ${missingFields.join(", ")}`)
+      }
+
+      const result = await addStudent(newStudent)
+
+      if (result.success) {
+        // Refresh the student list
+        const studentsResult = await getAllStudents()
+        if (studentsResult.success) {
+          setStudents(studentsResult.students)
+        }
+
+        // Update stats
+        const statsResult = await getAdminStats()
+        if (statsResult.success) {
+          setStats(statsResult.stats)
+        }
+
+        toast({
+          title: "Success",
+          description: "Student added successfully",
+        })
+
+        // Reset form and close dialog
+        setNewStudent({
+          fullName: "",
+          class: "",
+          olympiadType: "",
+          fatherName: "",
+          motherName: "",
+          fatherMobile: "",
+          motherMobile: "",
+          address: "",
+          gender: "male",
+          dateOfBirth: "",
+          educationalInstitute: "",
+          dreamUniversity: "General",
+          previousScholarship: "no",
+          scholarshipDetails: "",
+        })
+        setIsAddDialogOpen(false)
+      } else {
+        throw new Error(result.error || "Failed to add student")
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to add student",
+        variant: "destructive",
+      })
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -284,6 +447,220 @@ export default function AdminDashboard() {
                     <SelectItem value="pending">Payment Pending</SelectItem>
                   </SelectContent>
                 </Select>
+
+                <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button className="bg-emerald-600 hover:bg-emerald-700 text-white">
+                      <UserPlus className="h-4 w-4 mr-2" />
+                      Add Student
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle>Add New Student</DialogTitle>
+                      <DialogDescription>
+                        Fill in the student details below to add a new registration.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="fullName">Full Name *</Label>
+                          <Input
+                            id="fullName"
+                            value={newStudent.fullName}
+                            onChange={(e) => setNewStudent({ ...newStudent, fullName: e.target.value })}
+                            required
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="class">Class *</Label>
+                          <Select
+                            value={newStudent.class}
+                            onValueChange={(value) => setNewStudent({ ...newStudent, class: value })}
+                          >
+                            <SelectTrigger id="class">
+                              <SelectValue placeholder="Select class" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {[5, 6, 7, 8, 9, 10].map((classNum) => (
+                                <SelectItem key={classNum} value={classNum.toString()}>
+                                  Class {classNum}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="olympiadType">Olympiad Type *</Label>
+                        <Select
+                          value={newStudent.olympiadType}
+                          onValueChange={(value) => setNewStudent({ ...newStudent, olympiadType: value })}
+                        >
+                          <SelectTrigger id="olympiadType">
+                            <SelectValue placeholder="Select olympiad type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Science">Science</SelectItem>
+                            <SelectItem value="Math">Math</SelectItem>
+                            <SelectItem value="Physics">Physics</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="fatherName">Father's Name *</Label>
+                          <Input
+                            id="fatherName"
+                            value={newStudent.fatherName}
+                            onChange={(e) => setNewStudent({ ...newStudent, fatherName: e.target.value })}
+                            required
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="fatherMobile">Father's Mobile *</Label>
+                          <Input
+                            id="fatherMobile"
+                            value={newStudent.fatherMobile}
+                            onChange={(e) => setNewStudent({ ...newStudent, fatherMobile: e.target.value })}
+                            required
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="motherName">Mother's Name *</Label>
+                          <Input
+                            id="motherName"
+                            value={newStudent.motherName}
+                            onChange={(e) => setNewStudent({ ...newStudent, motherName: e.target.value })}
+                            required
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="motherMobile">Mother's Mobile</Label>
+                          <Input
+                            id="motherMobile"
+                            value={newStudent.motherMobile}
+                            onChange={(e) => setNewStudent({ ...newStudent, motherMobile: e.target.value })}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="address">Address *</Label>
+                        <Input
+                          id="address"
+                          value={newStudent.address}
+                          onChange={(e) => setNewStudent({ ...newStudent, address: e.target.value })}
+                          required
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>Gender *</Label>
+                          <RadioGroup
+                            value={newStudent.gender}
+                            onValueChange={(value) => setNewStudent({ ...newStudent, gender: value })}
+                            className="flex space-x-4"
+                          >
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="male" id="male" />
+                              <Label htmlFor="male">Male</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="female" id="female" />
+                              <Label htmlFor="female">Female</Label>
+                            </div>
+                          </RadioGroup>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="dateOfBirth">Date of Birth *</Label>
+                          <Input
+                            id="dateOfBirth"
+                            type="date"
+                            value={newStudent.dateOfBirth}
+                            onChange={(e) => setNewStudent({ ...newStudent, dateOfBirth: e.target.value })}
+                            required
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="educationalInstitute">Educational Institute *</Label>
+                        <Input
+                          id="educationalInstitute"
+                          value={newStudent.educationalInstitute}
+                          onChange={(e) => setNewStudent({ ...newStudent, educationalInstitute: e.target.value })}
+                          required
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="dreamUniversity">Dream University *</Label>
+                        <Select
+                          value={newStudent.dreamUniversity}
+                          onValueChange={(value) => setNewStudent({ ...newStudent, dreamUniversity: value })}
+                        >
+                          <SelectTrigger id="dreamUniversity">
+                            <SelectValue placeholder="Select dream university" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="BUET">Study in BUET</SelectItem>
+                            <SelectItem value="Medical">Study in Medical</SelectItem>
+                            <SelectItem value="General">Study in General University (DU,JU etc.)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>Previous Scholarship</Label>
+                        <RadioGroup
+                          value={newStudent.previousScholarship}
+                          onValueChange={(value) => setNewStudent({ ...newStudent, previousScholarship: value })}
+                          className="flex space-x-4"
+                        >
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="yes" id="scholarship-yes" />
+                            <Label htmlFor="scholarship-yes">Yes</Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="no" id="scholarship-no" />
+                            <Label htmlFor="scholarship-no">No</Label>
+                          </div>
+                        </RadioGroup>
+                      </div>
+
+                      {newStudent.previousScholarship === "yes" && (
+                        <div className="space-y-2">
+                          <Label htmlFor="scholarshipDetails">Scholarship Details</Label>
+                          <Input
+                            id="scholarshipDetails"
+                            value={newStudent.scholarshipDetails}
+                            onChange={(e) => setNewStudent({ ...newStudent, scholarshipDetails: e.target.value })}
+                          />
+                        </div>
+                      )}
+                    </div>
+                    <DialogFooter>
+                      <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+                        Cancel
+                      </Button>
+                      <Button
+                        onClick={handleAddStudent}
+                        disabled={isSubmitting}
+                        className="bg-emerald-600 hover:bg-emerald-700"
+                      >
+                        {isSubmitting ? "Adding..." : "Add Student"}
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
               </div>
             </div>
           </CardHeader>
@@ -380,6 +757,41 @@ export default function AdminDashboard() {
                                 Mark Pending
                               </Button>
                             )}
+
+                            <AlertDialog
+                              open={studentToDelete === student.id}
+                              onOpenChange={(open) => !open && setStudentToDelete(null)}
+                            >
+                              <AlertDialogTrigger asChild>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-8 border-red-200 text-red-700 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-900/30"
+                                  onClick={() => setStudentToDelete(student.id)}
+                                >
+                                  <Trash2 className="h-3.5 w-3.5 mr-1" />
+                                  Delete
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    This will permanently delete the student record for {student.fullName}. This action
+                                    cannot be undone.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    className="bg-red-600 hover:bg-red-700"
+                                    onClick={() => handleDeleteStudent(student.id)}
+                                  >
+                                    Delete
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
                           </div>
                         </TableCell>
                       </TableRow>

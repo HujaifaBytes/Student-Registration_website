@@ -267,6 +267,74 @@ export async function updatePaymentStatus(id: string, status: string) {
   }
 }
 
+export async function deleteStudent(id: string) {
+  try {
+    const { error } = await supabaseServer.from("students").delete().eq("id", id)
+
+    if (error) {
+      return { success: false, error: "Failed to delete student" }
+    }
+
+    revalidatePath("/admin/dashboard")
+    return { success: true, message: "Student deleted successfully" }
+  } catch (error) {
+    console.error("Error deleting student:", error)
+    return { success: false, error: "Failed to delete student" }
+  }
+}
+
+export async function addStudent(studentData: any) {
+  try {
+    // Generate registration number using the database function
+    const { data: registrationData, error: registrationError } =
+      await supabaseServer.rpc("generate_registration_number")
+
+    if (registrationError) {
+      console.error("Error generating registration number:", registrationError)
+      return { success: false, error: "Failed to generate registration number" }
+    }
+
+    const registrationNumber = registrationData || `SSS-${new Date().getFullYear()}-0001`
+
+    // Insert the student record
+    const { data: student, error: insertError } = await supabaseServer
+      .from("students")
+      .insert({
+        class: studentData.class,
+        olympiad_type: studentData.olympiadType,
+        full_name: studentData.fullName,
+        father_name: studentData.fatherName,
+        mother_name: studentData.motherName,
+        father_mobile: studentData.fatherMobile,
+        mother_mobile: studentData.motherMobile || null,
+        address: studentData.address,
+        gender: studentData.gender,
+        date_of_birth: studentData.dateOfBirth,
+        educational_institute: studentData.educationalInstitute,
+        dream_university: studentData.dreamUniversity,
+        previous_scholarship: studentData.previousScholarship,
+        scholarship_details: studentData.previousScholarship === "yes" ? studentData.scholarshipDetails : null,
+        photo_url: "/placeholder.svg?height=200&width=150", // Default placeholder
+        signature_url: "/placeholder.svg?height=80&width=300", // Default placeholder
+        registration_number: registrationNumber,
+        payment_status: "pending",
+      })
+      .select("id")
+      .single()
+
+    if (insertError) {
+      console.error("Error inserting student:", insertError)
+      return { success: false, error: "Failed to add student. Please try again." }
+    }
+
+    revalidatePath("/admin/dashboard")
+    return { success: true, studentId: student?.id, message: "Student added successfully" }
+  } catch (error) {
+    console.error("Error adding student:", error)
+    return { success: false, error: "Failed to add student. Please try again." }
+  }
+}
+
 export async function adminLogin(formData: FormData) {
   try {
     const username = formData.get("username") as string

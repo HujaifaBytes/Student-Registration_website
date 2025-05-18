@@ -145,9 +145,6 @@ export default function AdminLoginPage() {
           <Link href="/" className="text-emerald-600 dark:text-emerald-400 hover:underline text-sm">
             Return to Home Page
           </Link>
-          <Link href="/setup" className="text-emerald-600 dark:text-emerald-400 hover:underline text-sm">
-            Database Setup
-          </Link>
         </CardFooter>
       </Card>
     </div>
